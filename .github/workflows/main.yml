@@ -1,0 +1,32 @@
+name: angular
+on:
+    push:
+      branches:
+      - main
+jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+        - uses: actions/setup-node@v3
+          with:
+            node-version: "18.x"
+        - uses: actions/cache@v3
+          with:
+            path: ~/.npm
+            key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+            restore-keys: |
+              ${{ runner.os }}-node-
+        - run: npm cache clean --force
+        - run: npm install  --legacy-peer-deps
+        - run: npm install -g @angular/cli > /dev/null
+        - run: ng build    
+        - name: Deploy to development-server
+          uses: easingthemes/ssh-deploy@v5.0.0
+          env:
+            SSH_PRIVATE_KEY: ${{ secrets.STAGE_SSH_PRIVATE_KEY }}
+            SOURCE: "dist/*"
+            REMOTE_HOST: ${{ secrets.STAGE_SSH_HOST }}
+            REMOTE_USER: ${{ secrets.STAGE_SSH_USERNAME }}
+            REMOTE_PORT: ${{ secrets.STAGE_PORT }}
+            TARGET: ${{ secrets.STAGE_TARGET }}
